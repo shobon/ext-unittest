@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import unittest
+import logging
 
 """
 ext_unittest はインスタンスの __dict__ で取得可能な属性を解析し、
@@ -34,13 +34,22 @@ class TestCase(unittest.TestCase):
         オブジェクトを適切な文字列表現に変換する。
         'ClassName (properties...)'
         """
+        # __dict__ を持つクラス (object のサブクラスは __dict__ を持つ)
         if hasattr(obj, '__dict__'):
             attributes = self.__create_joined_attributes_from_dict(obj.__dict__)
             return '%s (%s)' % (obj.__class__.__name__, attributes)
+        # object
         if type(obj) is object:
             return 'object ()'
+        # bool またはそのサブクラス
         if type(obj) is bool:
             return '1' if obj else '0'
+        # list, tuple, set (__dict__ なし)
+        if isinstance(obj, list) or isinstance(obj, tuple) or isinstance(obj, set):
+            outputs = []
+            for element in obj:
+                outputs.append(self.__create_message(element))
+            return str(obj.__class__(outputs))
         return str(obj)
     
     def assertEqualForProperties(self, first, second, label=None):
@@ -54,6 +63,7 @@ class TestCase(unittest.TestCase):
         f = self.__create_message(first)
         s = self.__create_message(second)
         msg = '%s%s != %s' % (l, f, s)
+        logging.debug(msg)
         super(TestCase, self).assertEqual(f, s, msg)
     
     def assertNotEqualForProperties(self, first, second, label=None):
@@ -64,6 +74,7 @@ class TestCase(unittest.TestCase):
         f = self.__create_message(first)
         s = self.__create_message(second)
         msg = '%s%s == %s' % (l, f, s)
+        logging.debug(msg)
         super(TestCase, self).assertNotEqual(f, s, msg)
    
     def assertFalseForObject(self, obj, label=None):
@@ -76,6 +87,7 @@ class TestCase(unittest.TestCase):
         l = label if label else 'assertFalseForObject'
         expr = self.__create_message(obj) if obj else obj
         msg = '%s: %s is not False' % (l, expr)
+        logging.debug(msg)
         super(TestCase, self).assertFalse(obj, msg)
         
     
